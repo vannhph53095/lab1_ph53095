@@ -1,4 +1,3 @@
-// File: fpoly/ph53095/lab1_ph53095/MainActivity.java
 package fpoly.ph53095.lab1_ph53095;
 
 import android.content.Intent;
@@ -27,8 +26,6 @@ import fpoly.ph53095.lab1_ph53095.DTO.ProductDTO;
 public class MainActivity extends AppCompatActivity {
 
     private RecyclerView rc_product;
-    private FloatingActionButton fab_add_product;
-    private Button btn_open_category;
     private ProductDAO productDAO;
     private CatDAO catDAO;
     private ProductAdapter productAdapter;
@@ -41,8 +38,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         rc_product = findViewById(R.id.rc_product);
-        fab_add_product = findViewById(R.id.fab_add_product);
-        btn_open_category = findViewById(R.id.btn_open_category);
+        FloatingActionButton fab_add_product = findViewById(R.id.fab_add_product);
+        Button btn_open_category = findViewById(R.id.btn_open_category);
 
         productDAO = new ProductDAO(this);
         catDAO = new CatDAO(this);
@@ -58,12 +55,11 @@ public class MainActivity extends AppCompatActivity {
 
         btn_open_category.setOnClickListener(v -> startActivity(new Intent(this, CatActivity.class)));
 
-        // SỬA: GỌI DIALOG KHI ẤN FAB
         fab_add_product.setOnClickListener(v -> {
             if (catList.isEmpty()) {
                 Toast.makeText(this, "Bạn cần thêm thể loại trước!", Toast.LENGTH_SHORT).show();
             } else {
-                showAddProductDialog(); // ĐÃ THÊM DÒNG NÀY
+                showAddProductDialog();
             }
         });
     }
@@ -83,10 +79,20 @@ public class MainActivity extends AppCompatActivity {
         rc_product.setLayoutManager(new LinearLayoutManager(this));
         rc_product.setAdapter(productAdapter);
 
-        productAdapter.setOnItemClickListener((product, position) -> showDeleteConfirmDialog(product, position));
+        productAdapter.setOnItemClickListener(new ProductAdapter.OnItemClickListener() {
+            @Override
+            public void onDeleteClick(ProductDTO product, int position) {
+                showDeleteConfirmDialog(product, position);
+            }
+
+            @Override
+            public void onEditClick(ProductDTO product, int position) {
+                showEditProductDialog(product, position);
+            }
+        });
     }
 
-    // DIALOG THÊM SẢN PHẨM
+
     private void showAddProductDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_edit_product, null);
@@ -119,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
                 double price = Double.parseDouble(priceStr);
                 int catId = Integer.parseInt(catIdStr);
 
-                // Kiểm tra ID thể loại có tồn tại không
+
                 boolean validCat = catList.stream().anyMatch(c -> c.getId() == catId);
                 if (!validCat) {
                     Toast.makeText(this, "ID thể loại không hợp lệ!", Toast.LENGTH_SHORT).show();
@@ -136,6 +142,63 @@ public class MainActivity extends AppCompatActivity {
                     dialog.dismiss();
                 } else {
                     Toast.makeText(this, "Thêm thất bại!", Toast.LENGTH_SHORT).show();
+                }
+            } catch (NumberFormatException e) {
+                Toast.makeText(this, "Giá hoặc ID phải là số!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+    }
+
+    private void showEditProductDialog(ProductDTO product, int position) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_edit_product, null);
+        builder.setView(view);
+
+        TextInputEditText edtName = view.findViewById(R.id.edt_product_name);
+        TextInputEditText edtPrice = view.findViewById(R.id.edt_product_price);
+        TextInputEditText edtCatId = view.findViewById(R.id.edt_category);
+        Button btnSave = view.findViewById(R.id.btn_save);
+        Button btnCancel = view.findViewById(R.id.btn_cancel);
+
+        edtName.setText(product.getName());
+        edtPrice.setText(String.valueOf(product.getPrice()));
+        edtCatId.setText(String.valueOf(product.getId_cat()));
+
+        AlertDialog dialog = builder.create();
+
+        btnSave.setOnClickListener(v -> {
+            String name = edtName.getText().toString().trim();
+            String priceStr = edtPrice.getText().toString().trim();
+            String catIdStr = edtCatId.getText().toString().trim();
+
+            if (name.isEmpty() || priceStr.isEmpty() || catIdStr.isEmpty()) {
+                Toast.makeText(this, "Vui lòng nhập đầy đủ!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            try {
+                double price = Double.parseDouble(priceStr);
+                int catId = Integer.parseInt(catIdStr);
+
+                boolean validCat = catList.stream().anyMatch(c -> c.getId() == catId);
+                if (!validCat) {
+                    Toast.makeText(this, "ID thể loại không hợp lệ!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                ProductDTO updatedProduct = new ProductDTO(name, price, catId);
+                updatedProduct.setId(product.getId());
+
+                if (productDAO.updateProduct(updatedProduct)) {
+                    productList.set(position, updatedProduct);
+                    productAdapter.notifyItemChanged(position);
+                    Toast.makeText(this, "Cập nhật thành công!", Toast.LENGTH_SHORT).show();
+                    dialog.dismiss();
+                } else {
+                    Toast.makeText(this, "Cập nhật thất bại!", Toast.LENGTH_SHORT).show();
                 }
             } catch (NumberFormatException e) {
                 Toast.makeText(this, "Giá hoặc ID phải là số!", Toast.LENGTH_SHORT).show();

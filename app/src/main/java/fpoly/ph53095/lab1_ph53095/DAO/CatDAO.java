@@ -1,4 +1,3 @@
-// File: fpoly/ph53095/lab1_ph53095/DAO/CatDAO.java
 package fpoly.ph53095.lab1_ph53095.DAO;
 
 import android.content.ContentValues;
@@ -34,7 +33,6 @@ public class CatDAO {
         String[] whereArgs = {String.valueOf(cat.getId())};
         return db.update("tb_cat", values, "id = ?", whereArgs) > 0;
     }
-    //
 
     // Xóa thể loại (có kiểm tra ràng buộc FK)
     public boolean deleteCat(int id) {
@@ -66,5 +64,21 @@ public class CatDAO {
         }
         cursor.close();
         return list;
+    }
+
+    // Lấy thể loại theo ID
+    public CatDTO getCatById(int id) {
+        CatDTO cat = null;
+        String sql = "SELECT * FROM tb_cat WHERE id = ?";
+        String[] args = {String.valueOf(id)};
+        Cursor cursor = db.rawQuery(sql, args);
+
+        if (cursor.moveToFirst()) {
+            cat = new CatDTO();
+            cat.setId(cursor.getInt(0));
+            cat.setName(cursor.getString(1));
+        }
+        cursor.close();
+        return cat;
     }
 }

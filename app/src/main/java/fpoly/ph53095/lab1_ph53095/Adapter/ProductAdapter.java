@@ -1,4 +1,3 @@
-// File: ProductAdapter.java
 package fpoly.ph53095.lab1_ph53095.Adapter;
 
 import android.content.Context;
@@ -13,6 +12,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 
+import fpoly.ph53095.lab1_ph53095.DAO.CatDAO;
+import fpoly.ph53095.lab1_ph53095.DTO.CatDTO;
 import fpoly.ph53095.lab1_ph53095.DTO.ProductDTO;
 import fpoly.ph53095.lab1_ph53095.R;
 
@@ -20,10 +21,11 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHold
 
     private Context context;
     private ArrayList<ProductDTO> list;
-
+    private CatDAO catDAO;
 
     public interface OnItemClickListener {
-        void onItemClick(ProductDTO product, int position);
+        void onDeleteClick(ProductDTO product, int position);
+        void onEditClick(ProductDTO product, int position);
     }
 
     private OnItemClickListener clickListener;
@@ -31,6 +33,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHold
     public ProductAdapter(Context context, ArrayList<ProductDTO> list) {
         this.context = context;
         this.list = list;
+        this.catDAO = new CatDAO(context);
     }
 
     public void setOnItemClickListener(OnItemClickListener listener) {
@@ -51,10 +54,20 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHold
         holder.tvName.setText(p.getName());
         holder.tvPrice.setText("Giá: " + String.format("%,.0f", p.getPrice()) + " VNĐ");
 
-        // Bấm icon xóa
+        CatDTO cat = catDAO.getCatById(p.getId_cat());
+        if (cat != null) {
+            holder.tvCategoryName.setText("Thể loại: " + cat.getName());
+        }
+
         holder.imgDelete.setOnClickListener(v -> {
             if (clickListener != null) {
-                clickListener.onItemClick(p, position);
+                clickListener.onDeleteClick(p, holder.getAdapterPosition());
+            }
+        });
+
+        holder.imgEdit.setOnClickListener(v -> {
+            if (clickListener != null) {
+                clickListener.onEditClick(p, holder.getAdapterPosition());
             }
         });
     }
@@ -65,15 +78,17 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHold
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvId, tvName, tvPrice;
-        ImageView imgDelete;
+        TextView tvId, tvName, tvPrice, tvCategoryName;
+        ImageView imgDelete, imgEdit;
 
         public ViewHolder(@NonNull View v) {
             super(v);
             tvId = v.findViewById(R.id.tv_product_id);
             tvName = v.findViewById(R.id.tv_product_name);
             tvPrice = v.findViewById(R.id.tv_product_price);
+            tvCategoryName = v.findViewById(R.id.tv_category_name);
             imgDelete = v.findViewById(R.id.img_delete_product);
+            imgEdit = v.findViewById(R.id.img_edit_product);
         }
     }
 }
